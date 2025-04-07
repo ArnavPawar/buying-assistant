@@ -2,32 +2,37 @@ import { openai } from "../services/openai";
 
 export const parseUserQuery = async (query: string) => {
   const prompt = `
-Convert the following product request into structured JSON:
-Input: "${query}"
+Return a list of 5 Amazon products based on the query below.
+Include only their title and ASIN in a structured JSON array.
+Use products available on amazon.com.
+
+User Query: "${query}"
+
 Output format:
-{
-  "keywords": "...",
-  "priceMax": ...,
-  "category": "..."
-}
+[
+  { "title": "...", "asin": "..." },
+  ...
+]
 `;
 
   try {
-    console.log("🧠 Sending prompt to GPT...");
+    console.log("🧠 Sending product search prompt to GPT...");
+
     const response = await openai.chat.completions.create({
       model: "gpt-3.5-turbo",
       messages: [{ role: "user", content: prompt }],
-      max_tokens: 200,
-      temperature: 0.3,
+      max_tokens: 300,
+      temperature: 0.4,
     });
 
-    const raw = response.choices[0]?.message?.content ?? "{}";
+    const raw = response.choices[0]?.message?.content ?? "[]";
     console.log("📥 GPT raw response:", raw);
 
-    const json = JSON.parse(raw);
-    return json;
+    const parsed = JSON.parse(raw);
+    return parsed; // ← array of { title, asin }
   } catch (err) {
     console.error("❌ GPT error:", err);
-    return { keywords: "", priceMax: 0, category: "" };
+    return [];
   }
 };
+
