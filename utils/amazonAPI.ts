@@ -11,10 +11,16 @@ const addAffiliateTag = (url: string, tag: string) => {
   return `${url}${separator}tag=${tag}`;
 };
 
-export const fetchAmazonProducts = async (parsedResults: any[]) => {
-  return parsedResults.map((item) => ({
-    title: item.title,
-    link: addAffiliateTag(item.link, AFFILIATE_TAG),
+export const fetchAmazonProducts = async (parsed: {
+  keywords: string;
+  priceMax: number;
+  category: string;
+}) => {
+  const keywordList = parsed.keywords.split(",").map(k => k.trim());
+
+  return keywordList.map((keyword) => ({
+    title: keyword,
+    link: addAffiliateTag(`https://www.amazon.com/s?k=${encodeURIComponent(keyword)}`, AFFILIATE_TAG),
     price: "Price unknown",
     rating: "⭐️?",
   }));

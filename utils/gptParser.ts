@@ -1,24 +1,44 @@
+// import { openai } from "../services/openai";
+
+export const parseUserQuery = async (query: string) => {
+  // 🧪 MOCK MODE – Free testing without using GPT tokens
+  console.log("🧪 [Mock GPT] called with query:", query);
+
+  return {
+    message: `Here are 5 great picks based on your search: "${query}". Let me know if you'd like to refine it!`,
+    products: [
+      "Wireless mouse",
+      "Bluetooth headphones",
+      "Laptop stand",
+      "Webcam with microphone",
+      "USB-C hub"
+    ]
+  };
+};
+
+
+/*
+💡 When ready to use GPT again, just uncomment this block:
+
 import { openai } from "../services/openai";
 
 export const parseUserQuery = async (query: string) => {
   const prompt = `
-  Return a list of 5 Amazon products based on the user query below.
-  Only include products available on amazon.com.
-  For each product, return:
-  - Title
-  - Direct Amazon URL (not an ASIN)
-  
-  Use this format:
-  [
-    { "title": "...", "link": "https://www.amazon.com/..." },
-    ...
-  ]
-  
-  Only output valid JSON. No explanations or extra text.
-  
-  User Query: "${query}"
+  You are a helpful shopping assistant.
+
+  When given a user's query, respond in this JSON format:
+  {
+    "message": "Friendly explanation for why you picked these items.",
+    "products": [
+      "Product 1",
+      "Product 2",
+      ...
+    ]
+  }
+
+  User query: "${query}"
+  Only return valid JSON. Only 5 items for the response.
   `;
-  
 
   try {
     console.log("🧠 Sending product search prompt to GPT...");
@@ -30,13 +50,10 @@ export const parseUserQuery = async (query: string) => {
       temperature: 0.4,
     });
 
-    const raw = response.choices[0]?.message?.content ?? "[]";
+    const raw = response.choices[0]?.message?.content ?? "{}";
     console.log("📥 GPT raw response:", raw);
 
-    // ✅ Try to slice to the last closing bracket to remove extra text
-    const trimmed = raw.slice(0, raw.lastIndexOf("]") + 1);
-
-    // ✅ Try parsing
+    const trimmed = raw.slice(0, raw.lastIndexOf("}") + 1);
     const parsed = JSON.parse(trimmed);
     return parsed;
   } catch (err) {
@@ -44,3 +61,5 @@ export const parseUserQuery = async (query: string) => {
     return [];
   }
 };
+*/
+
