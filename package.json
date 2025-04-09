@@ -12,6 +12,8 @@
     "@expo/metro-runtime": "~4.0.1",
     "@react-native-async-storage/async-storage": "^2.1.2",
     "@supabase/supabase-js": "^2.49.4",
+    "base-64": "^1.0.0",
+    "buffer": "^6.0.3",
     "expo": "~52.0.43",
     "expo-status-bar": "~2.0.1",
     "openai": "^4.92.0",

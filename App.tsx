@@ -4,8 +4,9 @@ import { parseUserQuery } from './utils/gptParser';
 import { fetchAmazonProducts } from './utils/amazonAPI';
 import { searchEbayProducts } from './utils/ebayAPI';
 import { saveChat, ChatMessage } from './utils/supabaseChats';
-import { runDebugInsert } from './utils/debugInsert';
+import { Buffer } from 'buffer';
 
+global.Buffer = Buffer;
 
 type Product = {
   title: string;
@@ -66,8 +67,7 @@ export default function App() {
         });
       } else if (platform === 'ebay') {
         console.log("📦 Fetching products from eBay...");
-        const queryString = Array.isArray(productTitles) ? productTitles.join(" ") : query;
-        products = await searchEbayProducts(queryString);
+        products = await searchEbayProducts(productTitles);
       }
 
       if (!products || products.length === 0) throw new Error("No products found");
@@ -117,15 +117,6 @@ export default function App() {
           color={platform === "ebay" ? "#007aff" : "#ccc"}
           onPress={() => setPlatform("ebay")}
         />
-        <Button
-          title="🧪 Test DB Insert"
-          color="#34c759"
-          onPress={() => {
-            console.log("🧪 Running debug insert...");
-            runDebugInsert();
-          }}
-        />
-
       </View>
 
       <Button title="Search" onPress={handleSearch} />

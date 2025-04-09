@@ -1,4 +1,4 @@
-// import { openai } from "../services/openai";
+import { openai } from "../services/openai";
 
 export const parseUserQuery = async (query: string) => {
   // 🧪 MOCK MODE – Free testing without using GPT tokens
@@ -16,50 +16,44 @@ export const parseUserQuery = async (query: string) => {
   };
 };
 
+// import { openai } from "../services/openai";
 
-/*
-💡 When ready to use GPT again, just uncomment this block:
+// export const parseUserQuery = async (query: string) => {
+//   const prompt = `
+//   You are a helpful shopping assistant.
 
-import { openai } from "../services/openai";
+//   When given a user's query, respond in this JSON format:
+//   {
+//     "message": "Friendly explanation for why you picked these items.",
+//     "products": [
+//       "Product 1",
+//       "Product 2",
+//       ...
+//     ]
+//   }
 
-export const parseUserQuery = async (query: string) => {
-  const prompt = `
-  You are a helpful shopping assistant.
+//   User query: "${query}"
+//   Only return valid JSON. Only 5 items for the response.
+//   `;
 
-  When given a user's query, respond in this JSON format:
-  {
-    "message": "Friendly explanation for why you picked these items.",
-    "products": [
-      "Product 1",
-      "Product 2",
-      ...
-    ]
-  }
+//   try {
+//     console.log("🧠 Sending product search prompt to GPT...");
 
-  User query: "${query}"
-  Only return valid JSON. Only 5 items for the response.
-  `;
+//     const response = await openai.chat.completions.create({
+//       model: "gpt-4o-mini-2024-07-18",
+//       messages: [{ role: "user", content: prompt }],
+//       max_tokens: 100,
+//       temperature: 0.4,
+//     });
 
-  try {
-    console.log("🧠 Sending product search prompt to GPT...");
+//     const raw = response.choices[0]?.message?.content ?? "{}";
+//     console.log("📥 GPT raw response:", raw);
 
-    const response = await openai.chat.completions.create({
-      model: "gpt-4o-mini-2024-07-18",
-      messages: [{ role: "user", content: prompt }],
-      max_tokens: 300,
-      temperature: 0.4,
-    });
-
-    const raw = response.choices[0]?.message?.content ?? "{}";
-    console.log("📥 GPT raw response:", raw);
-
-    const trimmed = raw.slice(0, raw.lastIndexOf("}") + 1);
-    const parsed = JSON.parse(trimmed);
-    return parsed;
-  } catch (err) {
-    console.error("❌ GPT error:", err);
-    return [];
-  }
-};
-*/
-
+//     const trimmed = raw.slice(0, raw.lastIndexOf("}") + 1);
+//     const parsed = JSON.parse(trimmed);
+//     return parsed;
+//   } catch (err) {
+//     console.error("❌ GPT error:", err);
+//     return [];
+//   }
+// };
