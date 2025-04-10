@@ -47,8 +47,12 @@ export const loadRecentChats = async () => {
     return [];
   }
 
-  return data;
+  return data.map(chat => ({
+    ...chat,
+    messages: typeof chat.messages === 'string' ? JSON.parse(chat.messages) : chat.messages
+  }));
 };
+
 
 export const deleteChatById = async (id: string) => {
   const { error } = await supabase.from('Chats').delete().eq('id', id);

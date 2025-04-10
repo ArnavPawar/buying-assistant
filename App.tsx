@@ -7,6 +7,7 @@ import { searchEbayProducts } from './utils/ebayAPI';
 import { saveChat, ChatMessage, loadRecentChats, deleteChatById } from './utils/supabaseChats';
 import { Buffer } from 'buffer';
 import { Keyboard, TouchableWithoutFeedback, KeyboardAvoidingView, Platform} from 'react-native';
+import { supabase } from './lib/supabase';
 
 
 global.Buffer = Buffer;
@@ -82,52 +83,58 @@ export default function App() {
     setError(false);
     setResults([]);
     setChatMessage('');
-
+  
     try {
-      console.log("🔍 Search started...");
-      console.log("📨 User query:", query);
-
       const parsed = await parseUserQuery(query);
-      console.log("🧠 GPT Parsed Response:", parsed);
-
       const message = parsed.message || '';
       const productTitles = parsed.products || parsed;
-
-      setChatMessage(message);
-
-      const chatHistory: ChatMessage[] = [
+  
+      const newMessages: ChatMessage[] = [
         { sender: 'user', text: query },
-        { sender: 'bot', text: message },
+        { sender: 'bot', text: message }
       ];
-      await saveChat(`Search: ${query}`, chatHistory);
+  
+      let updatedMessages = newMessages;
+  
+      if (selectedChatId) {
+        const currentChat = chats.find(chat => chat.id.toString() === selectedChatId);
+        if (currentChat) {
+          updatedMessages = [...currentChat.messages, ...newMessages];
+  
+          await supabase.from('Chats').update({
+            messages: updatedMessages
+          }).eq('id', selectedChatId);
+        }
+      } else {
+        await saveChat(`Search: ${query}`, newMessages);
+      }
+  
       const updated = await loadRecentChats();
       setChats(updated);
-
+      setChatMessage(message);
       let products: Product[] = [];
-
+  
       if (platform === 'amazon') {
-        console.log("📦 Fetching products from Amazon...");
         products = await fetchAmazonProducts({
           keywords: productTitles.join(", "),
           priceMax: 999,
           category: ''
         });
-      } else if (platform === 'ebay') {
-        console.log("📦 Fetching products from eBay...");
+      } else {
         products = await searchEbayProducts(productTitles);
       }
-
+  
       if (!products || products.length === 0) throw new Error("No products found");
-
-      console.log("✅ Products fetched:", products.length, "items");
+  
       setResults(products);
     } catch (err) {
       console.error("❌ Error during search:", err);
       setError(true);
     }
-
+  
     setLoading(false);
   };
+  
 
   return (
     <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
