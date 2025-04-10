@@ -6,7 +6,7 @@ import { fetchAmazonProducts } from './utils/amazonAPI';
 import { searchEbayProducts } from './utils/ebayAPI';
 import { saveChat, ChatMessage, loadRecentChats, deleteChatById } from './utils/supabaseChats';
 import { Buffer } from 'buffer';
-import { Keyboard } from 'react-native';
+import { Keyboard, TouchableWithoutFeedback, KeyboardAvoidingView, Platform} from 'react-native';
 
 
 global.Buffer = Buffer;
@@ -130,6 +130,11 @@ export default function App() {
   };
 
   return (
+    <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+    <KeyboardAvoidingView
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      style={{ flex: 1 }}
+    >
     <View style={{ flex: 1, backgroundColor: '#fff', padding: 0, paddingTop: 0 }}>
       <Picker
         selectedValue={selectedChatId ?? 'none'}
@@ -148,8 +153,6 @@ export default function App() {
         ))}
       </Picker>
 
-
-
       {selectedChatId && selectedChatId !== 'none' && (
           <Button
             title="❌ Delete Chat"
@@ -157,7 +160,6 @@ export default function App() {
             onPress={() => handleDeleteChat(selectedChatId)}
           />
         )}
-
 
       <TextInput
         placeholder="Ask for a product..."
@@ -175,7 +177,6 @@ export default function App() {
           fontSize: 16,
         }}
       />
-      <Button title="Hide Keyboard ⌨️" onPress={() => Keyboard.dismiss()} />
 
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 10 }}>
         <Button title="Amazon" color={platform === "amazon" ? "#007aff" : "#ccc"} onPress={() => setPlatform("amazon")} />
@@ -219,5 +220,7 @@ export default function App() {
         )}
       </ScrollView>
     </View>
+    </KeyboardAvoidingView>
+  </TouchableWithoutFeedback>
   );
 }
