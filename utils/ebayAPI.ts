@@ -84,6 +84,7 @@ export async function searchEbayProducts(productTitles: string[]) {
           price: item.price?.value ? `$${item.price.value}` : 'Price unknown',
           rating: '⭐️?', // eBay doesn't return rating info here
           link: `${item.itemWebUrl}?campid=${EXPO_PUBLIC_EBAY_CAMPAIGN_ID}`,
+          image: item.image?.imageUrl || item.thumbnailImages?.[0]?.imageUrl || '' // fallback
         });
       }
     } catch (err) {
