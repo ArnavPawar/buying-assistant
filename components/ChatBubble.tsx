@@ -20,8 +20,6 @@ export default function ChatBubble({ message }: { message: ChatMessage }) {
       {lines.map((line, i) => {
         const isLink = line.startsWith('http');
         const isImage = line.match(/\.(jpg|jpeg|png|webp)$/i);
-        console.log("📦 Chat line:", line);
-
         if (isImage) {
             return (
                 <Image
