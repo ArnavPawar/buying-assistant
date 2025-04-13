@@ -1,11 +1,23 @@
 import React from 'react';
-import { View, Text, Button } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
+import { Button } from 'react-native-paper';
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { RootStackParamList } from '../App'; // Adjust the import path if needed
 
-export default function HomeScreen({ goToChat }: { goToChat: () => void }) {
+type Props = NativeStackScreenProps<RootStackParamList, 'Home'>;
+
+export default function HomeScreen({ navigation }: Props) {
   return (
-    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' , backgroundColor: '#fff'}}>
-      <Text>🏠 Home Screen</Text>
-      <Button title="Go to Chat" onPress={goToChat} />
+    <View style={styles.container}>
+      <Text style={styles.title}>🏠 Home Screen</Text>
+      <Button mode="contained" onPress={() => navigation.navigate('Chat')}>
+        Go to Chat
+      </Button>
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#fff' },
+  title: { fontSize: 24, marginBottom: 20 },
+});

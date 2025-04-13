@@ -1,28 +1,41 @@
 // 📁 App.tsx
-import React, { useState } from 'react';
-import { View } from 'react-native';
-import ChatScreen from './screens/ChatScreen';
-import HomeScreen from './screens/HomeScreen';
-import LoginScreen from './screens/LoginScreen';
-import { theme } from './theme'; 
+import React from 'react';
+import { NavigationContainer } from '@react-navigation/native';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { Provider as PaperProvider } from 'react-native-paper';
+import { theme } from './theme';
+
+import LoginScreen from './screens/LoginScreen';
+import HomeScreen from './screens/HomeScreen';
+import ChatScreen from './screens/ChatScreen';
 
 import { Buffer } from 'buffer';
 global.Buffer = global.Buffer || Buffer;
 
-export default function App() {
-  const [isLoggedIn, setIsLoggedIn] = useState(false); // toggle to false to test login screen
-  const [onHome, setOnHome] = useState(true);
+export type RootStackParamList = {
+  Login: undefined;
+  Home: undefined;
+  Chat: undefined;
+};
 
+const Stack = createNativeStackNavigator<RootStackParamList>();
+
+export default function App() {
   return (
     <PaperProvider theme={theme}>
-      {!isLoggedIn ? (
-        <LoginScreen onLogin={() => setIsLoggedIn(true)} />
-      ) : onHome ? (
-        <HomeScreen goToChat={() => setOnHome(false)} />
-      ) : (
-        <ChatScreen goHome={() => setOnHome(true)} />
-      )}
+      <NavigationContainer>
+        <Stack.Navigator
+          initialRouteName="Login"
+          screenOptions={{
+            animation: 'slide_from_right', // default
+            headerShown: false,
+        }}
+        >
+          <Stack.Screen name="Login" component={LoginScreen} />
+          <Stack.Screen name="Home" component={HomeScreen} />
+          <Stack.Screen name="Chat" component={ChatScreen} />
+        </Stack.Navigator>
+      </NavigationContainer>
     </PaperProvider>
   );
 }

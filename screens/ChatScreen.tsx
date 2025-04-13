@@ -17,6 +17,11 @@ import { supabase } from '../lib/supabase';
 import { saveChat, loadRecentChats, deleteChatById, ChatMessage } from '../utils/supabaseChats';
 import ChatBubble from '../components/ChatBubble';
 import { IconButton, Button, TextInput as PaperInput, useTheme } from 'react-native-paper';
+import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import type { RootStackParamList } from '../App';
+
+type ChatScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Chat'>;
 
 export type Chat = {
   id: string;
@@ -32,12 +37,9 @@ export type Product = {
   image: string;
 };
 
-type Props = {
-  goHome: () => void;
-};
-
-export default function ChatScreen({ goHome }: Props) {
+export default function ChatScreen() {
   const theme = useTheme();
+  const navigation = useNavigation<ChatScreenNavigationProp>();
   const [query, setQuery] = useState('');
   const [loading, setLoading] = useState(false);
   const [platform, setPlatform] = useState<'amazon' | 'ebay'>('ebay');
@@ -54,9 +56,7 @@ export default function ChatScreen({ goHome }: Props) {
   }, []);
 
   useEffect(() => {
-    const showSubscription = Keyboard.addListener('keyboardDidShow', () => {
-      scrollToEnd();
-    });
+    const showSubscription = Keyboard.addListener('keyboardDidShow', scrollToEnd);
     return () => showSubscription.remove();
   }, []);
 
@@ -165,8 +165,10 @@ export default function ChatScreen({ goHome }: Props) {
           {/* Header */}
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 12, paddingTop: 40, paddingBottom: 10 }}>
             <IconButton icon="menu" onPress={() => setShowChatMenu(prev => !prev)} />
-            <TouchableOpacity onPress={goHome}>
-              <Text style={{ fontSize: 20, fontWeight: '600', color: theme.colors.primary }}>ShopGPT</Text>
+            <TouchableOpacity onPress={() => navigation.goBack()}>
+              <Text style={{ fontSize: 20, fontWeight: '600', color: theme.colors.primary }}>
+                ShopGPT
+              </Text>
             </TouchableOpacity>
             <IconButton icon="plus" onPress={handleNewChat} />
           </View>
