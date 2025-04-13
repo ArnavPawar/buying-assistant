@@ -1,11 +1,22 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { View, TextInput, Button, FlatList, Text, KeyboardAvoidingView, Platform, Keyboard, TouchableWithoutFeedback, TouchableOpacity, ScrollView, KeyboardEvent } from 'react-native';
+import {
+  View,
+  KeyboardAvoidingView,
+  Platform,
+  Keyboard,
+  TouchableWithoutFeedback,
+  ScrollView,
+  FlatList,
+  Text,
+  TouchableOpacity
+} from 'react-native';
 import { fetchAmazonProducts } from '../utils/amazonAPI';
 import { searchEbayProducts } from '../utils/ebayAPI';
 import { parseUserQuery } from '../utils/gptParser';
 import { supabase } from '../lib/supabase';
 import { saveChat, loadRecentChats, deleteChatById, ChatMessage } from '../utils/supabaseChats';
 import ChatBubble from '../components/ChatBubble';
+import { IconButton, Button, TextInput as PaperInput, useTheme } from 'react-native-paper';
 
 export type Chat = {
   id: string;
@@ -26,6 +37,7 @@ type Props = {
 };
 
 export default function ChatScreen({ goHome }: Props) {
+  const theme = useTheme();
   const [query, setQuery] = useState('');
   const [loading, setLoading] = useState(false);
   const [platform, setPlatform] = useState<'amazon' | 'ebay'>('ebay');
@@ -148,14 +160,18 @@ export default function ChatScreen({ goHome }: Props) {
   return (
     <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
-        <View style={{ flex: 1, backgroundColor: '#fff' }}>
+        <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
 
+          {/* Header */}
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 12, paddingTop: 40, paddingBottom: 10 }}>
-            <Button title="☰" onPress={() => setShowChatMenu(prev => !prev)} />
-            <Text style={{ fontSize: 18, fontWeight: 'bold' }}>Chat</Text>
-            <Button title="➕" onPress={handleNewChat} />
+            <IconButton icon="menu" onPress={() => setShowChatMenu(prev => !prev)} />
+            <TouchableOpacity onPress={goHome}>
+              <Text style={{ fontSize: 20, fontWeight: '600', color: theme.colors.primary }}>ShopGPT</Text>
+            </TouchableOpacity>
+            <IconButton icon="plus" onPress={handleNewChat} />
           </View>
 
+          {/* Chat menu */}
           {showChatMenu && (
             <View style={{ position: 'absolute', top: 80, left: 10, right: 10, backgroundColor: '#fff', borderRadius: 10, padding: 10, elevation: 5, zIndex: 10 }}>
               <ScrollView keyboardShouldPersistTaps="handled">
@@ -168,39 +184,41 @@ export default function ChatScreen({ goHome }: Props) {
                     }}>
                       <Text>{chat.name}</Text>
                     </TouchableOpacity>
-                    <Button title="Rename" onPress={() => {}} />
-                    <Button title="🗑️" color="red" onPress={() => handleDeleteChat(chat.id)} />
+                    <IconButton icon="pencil" onPress={() => {}} />
+                    <IconButton icon="delete" iconColor="red" onPress={() => handleDeleteChat(chat.id)} />
                   </View>
                 ))}
               </ScrollView>
             </View>
           )}
 
-          <View style={{ flex: 1, marginBottom: 105 }}>
+          {/* Chat content scrollable */}
+          <View style={{ flex: 1 }}>
             <FlatList
               ref={flatListRef}
               data={messages}
               keyExtractor={(_, index) => index.toString()}
               renderItem={({ item }) => <ChatBubble message={item} />}
-              contentContainerStyle={{ padding: 10 }}
+              contentContainerStyle={{ padding: 10, paddingBottom: 110 }}
               keyboardShouldPersistTaps="handled"
             />
           </View>
 
-          <View style={{ position: 'absolute', bottom: 0, left: 0, right: 0, backgroundColor: '#fff', padding: 10, borderTopWidth: 1, borderColor: '#ccc' }}>
-            <TextInput
+          {/* Input and controls */}
+          <View style={{ backgroundColor: '#fff', padding: 10, borderTopWidth: 1, borderColor: '#ccc' }}>
+            <PaperInput
               placeholder="Ask for a product..."
               placeholderTextColor="#888"
               value={query}
               onChangeText={setQuery}
               onSubmitEditing={handleSearch}
-              style={{ borderWidth: 1, borderColor: '#ccc', backgroundColor: '#fff', color: '#000', padding: 10, borderRadius: 8, fontSize: 16, marginBottom: 8 }}
+              mode="outlined"
+              style={{ marginBottom: 8 }}
+              right={<PaperInput.Icon icon="send" onPress={handleSearch} />}
             />
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-              <Button title="Amazon" color={platform === 'amazon' ? '#007aff' : '#ccc'} onPress={() => setPlatform('amazon')} />
-              <Button title="Home" onPress={goHome} />
-              <Button title="eBay" color={platform === 'ebay' ? '#007aff' : '#ccc'} onPress={() => setPlatform('ebay')} />
-              <Button title="Search" onPress={handleSearch} />
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingBottom: 12 }}>
+              <Button mode={platform === 'amazon' ? 'contained' : 'outlined'} onPress={() => setPlatform('amazon')}>Amazon</Button>
+              <Button mode={platform === 'ebay' ? 'contained' : 'outlined'} onPress={() => setPlatform('ebay')}>eBay</Button>
             </View>
           </View>
 
