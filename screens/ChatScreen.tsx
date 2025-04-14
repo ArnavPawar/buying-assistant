@@ -58,8 +58,10 @@ export default function ChatScreen() {
   
       // If the Home screen passed in a chatId
       const chatIdFromRoute = (route.params as any)?.chatId;
-  
-      if (chatIdFromRoute) {
+
+      if (chatIdFromRoute === null) {
+        handleNewChat(); // 👈 this will trigger the new chat
+      } else if (chatIdFromRoute) {
         setSelectedChatId(chatIdFromRoute);
       } else if (loaded.length > 0) {
         setSelectedChatId(loaded[0].id.toString());
@@ -88,7 +90,14 @@ export default function ChatScreen() {
     await deleteChatById(chatId);
     const updated = await loadRecentChats();
     setChats(updated);
-    if (selectedChatId === chatId) handleRefresh();
+  
+    if (selectedChatId === chatId) {
+      if (updated.length > 0) {
+        setSelectedChatId(updated[0].id.toString());
+      } else {
+        handleNewChat(); // only if no chats left
+      }
+    }
   };
 
   const handleNewChat = async () => {
@@ -105,24 +114,28 @@ export default function ChatScreen() {
   
     const userMsg: ChatMessage = { sender: 'user', text: query };
     const loadingMsg: ChatMessage = { sender: 'bot', text: '⏳ Loading suggestions...' };
-    let updatedMessages: ChatMessage[] = [userMsg, loadingMsg];
   
     let currentId = selectedChatId;
+    let currentMessages: ChatMessage[] = [];
   
     if (!currentId) {
-      const { data, error } = await saveChat('', updatedMessages); // initially no name
+      const initialMessages = [userMsg, loadingMsg];
+      const { data, error } = await saveChat('', initialMessages); // no name initially
       if (data && data.length > 0) {
         currentId = data[0].id.toString();
         setSelectedChatId(currentId);
+        currentMessages = initialMessages;
       }
     } else {
       const currentChat = chats.find(chat => chat.id.toString() === currentId);
-      const currentName = currentChat?.name ?? '';
+      currentMessages = currentChat?.messages || [];
+      const updatedMessages = [...currentMessages, userMsg, loadingMsg];
   
       await supabase.from('Chats').update({
         messages: updatedMessages,
-        name: currentName || query.slice(0, 25), // only name it if not already named
+        name: currentChat?.name || query.slice(0, 25),
       }).eq('id', currentId);
+      currentMessages = updatedMessages; // carry forward for final update
     }
   
     const refreshedBefore = await loadRecentChats();
@@ -150,7 +163,7 @@ export default function ChatScreen() {
         { sender: 'bot', text: productList }
       ];
   
-      const finalMessages = updatedMessages.slice(0, -1).concat(botMessages);
+      const finalMessages = currentMessages.slice(0, -1).concat(botMessages); // replace loading with output
   
       if (currentId) {
         await supabase.from('Chats').update({ messages: finalMessages }).eq('id', currentId);
