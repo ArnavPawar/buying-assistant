@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { View, StyleSheet, Dimensions, ScrollView } from 'react-native';
 import { Text, Button, Card, useTheme, Modal, Portal } from 'react-native-paper';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { RootStackParamList } from '../App';
+import { saveChat } from '../utils/supabaseChats';
+import type { RootStackParamList } from '../App'; // ✅ make sure you only import it once
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Home'>;
 
@@ -25,7 +26,9 @@ export default function HomeScreen({ navigation }: Props) {
               mode="contained"
               icon="magnify"
               style={styles.button}
-              onPress={() => navigation.navigate('Chat')}
+              onPress={async () => {
+                navigation.navigate('Chat', { chatId: null }); // or undefined, depending on your `RootStackParamList` typing
+              }}
             >
               Start a New Search
             </Button>
@@ -34,8 +37,8 @@ export default function HomeScreen({ navigation }: Props) {
               mode="outlined"
               icon="chat"
               style={styles.button}
-              onPress={() => navigation.navigate('Chat')}
-            >
+              onPress={() => navigation.navigate('Chat', { chatId: undefined })}
+              >
               View My Chats
             </Button>
 
@@ -59,7 +62,6 @@ export default function HomeScreen({ navigation }: Props) {
           </Card.Content>
         </Card>
 
-        {/* Two Info Boxes Below */}
         <View style={styles.infoRow}>
           <Card style={styles.infoBox} onPress={() => setVisible(true)}>
             <Card.Content style={{ alignItems: 'center' }}>

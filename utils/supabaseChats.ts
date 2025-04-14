@@ -6,14 +6,18 @@ export type ChatMessage = {
 };
 
 export const saveChat = async (name: string, messages: ChatMessage[]) => {
+  const user = (await supabase.auth.getUser()).data.user;
+  if (!user) return { data: null, error: new Error("No user found") };
+
   const { data: existingChats, error: fetchError } = await supabase
     .from('Chats')
     .select('id')
-    .order('created_at', { ascending: true }); // oldest first
+    .eq('user_id', user.id)
+    .order('created_at', { ascending: true });
 
   if (fetchError) {
     console.error("❌ Error fetching chats:", fetchError);
-    return;
+    return { data: null, error: fetchError };
   }
 
   if (existingChats && existingChats.length >= 5) {
@@ -22,18 +26,19 @@ export const saveChat = async (name: string, messages: ChatMessage[]) => {
     console.log("🗑️ Oldest chat deleted to make room");
   }
 
-  const { error } = await supabase.from('Chats').insert({
-    name,
-    messages,
-  });
+  const { data, error } = await supabase
+    .from('Chats')
+    .insert({ name, messages, user_id: user.id })
+    .select(); // 🔥 make sure to select so data is returned
 
   if (error) {
     console.error("❌ Save failed:", error);
+    return { data: null, error };
   } else {
     console.log("✅ Chat saved successfully");
+    return { data, error: null }; // ✅ return inserted row
   }
 };
-  
 
 export const loadRecentChats = async () => {
   const { data, error } = await supabase
@@ -53,7 +58,6 @@ export const loadRecentChats = async () => {
   }));
 };
 
-
 export const deleteChatById = async (id: string) => {
   const { error } = await supabase.from('Chats').delete().eq('id', id);
   if (error) {
@@ -62,4 +66,3 @@ export const deleteChatById = async (id: string) => {
     console.log('🗑️ Chat deleted');
   }
 };
-

@@ -17,7 +17,7 @@ global.Buffer = global.Buffer || Buffer;
 export type RootStackParamList = {
   Login: undefined;
   Home: undefined;
-  Chat: undefined;
+  Chat: { chatId?: string | null }; // <- allow optional chatId
   Settings: undefined;
 };
 

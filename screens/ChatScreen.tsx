@@ -20,6 +20,7 @@ import { IconButton, Button, TextInput as PaperInput, useTheme } from 'react-nat
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../App';
+import { useRoute } from '@react-navigation/native';
 
 type ChatScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Chat'>;
 
@@ -40,6 +41,7 @@ export type Product = {
 export default function ChatScreen() {
   const theme = useTheme();
   const navigation = useNavigation<ChatScreenNavigationProp>();
+  const route = useRoute(); // access route params
   const [query, setQuery] = useState('');
   const [loading, setLoading] = useState(false);
   const [platform, setPlatform] = useState<'amazon' | 'ebay'>('ebay');
@@ -48,10 +50,20 @@ export default function ChatScreen() {
   const [showChatMenu, setShowChatMenu] = useState(false);
   const flatListRef = useRef<FlatList>(null);
 
+
   useEffect(() => {
     (async () => {
       const loaded = await loadRecentChats();
       setChats(loaded);
+  
+      // If the Home screen passed in a chatId
+      const chatIdFromRoute = (route.params as any)?.chatId;
+  
+      if (chatIdFromRoute) {
+        setSelectedChatId(chatIdFromRoute);
+      } else if (loaded.length > 0) {
+        setSelectedChatId(loaded[0].id.toString());
+      }
     })();
   }, []);
 
@@ -81,7 +93,7 @@ export default function ChatScreen() {
 
   const handleNewChat = async () => {
     const newMessages: ChatMessage[] = [];
-    await saveChat('New Chat', newMessages);
+    await saveChat('', newMessages); // No name initially
     const refreshed = await loadRecentChats();
     setChats(refreshed);
     const latest = refreshed[0];
@@ -90,67 +102,67 @@ export default function ChatScreen() {
 
   const handleSearch = async () => {
     if (!query.trim()) return;
+  
     const userMsg: ChatMessage = { sender: 'user', text: query };
     const loadingMsg: ChatMessage = { sender: 'bot', text: '⏳ Loading suggestions...' };
-
     let updatedMessages: ChatMessage[] = [userMsg, loadingMsg];
-    let currentChat: Chat | undefined;
-
-    if (selectedChatId && selectedChatId !== 'none') {
-      currentChat = chats.find(chat => chat.id.toString() === selectedChatId);
-      if (currentChat) {
-        updatedMessages = [...currentChat.messages, ...updatedMessages];
-        await supabase.from('Chats').update({ messages: updatedMessages }).eq('id', selectedChatId);
+  
+    let currentId = selectedChatId;
+  
+    if (!currentId) {
+      const { data, error } = await saveChat('', updatedMessages); // initially no name
+      if (data && data.length > 0) {
+        currentId = data[0].id.toString();
+        setSelectedChatId(currentId);
       }
     } else {
-      await saveChat(`Search: ${query}`, updatedMessages);
+      const currentChat = chats.find(chat => chat.id.toString() === currentId);
+      const currentName = currentChat?.name ?? '';
+  
+      await supabase.from('Chats').update({
+        messages: updatedMessages,
+        name: currentName || query.slice(0, 25), // only name it if not already named
+      }).eq('id', currentId);
     }
-
+  
     const refreshedBefore = await loadRecentChats();
     setChats(refreshedBefore);
     scrollToEnd();
-
     setLoading(true);
+  
     try {
       const parsed = await parseUserQuery(query);
       const message = parsed.message || '';
       const productTitles = parsed.products || parsed;
-
+  
       const products = platform === 'amazon'
         ? await fetchAmazonProducts({ keywords: productTitles.join(", "), priceMax: 999, category: '' })
         : await searchEbayProducts(productTitles);
-
+  
       if (!products || products.length === 0) throw new Error("No products found");
-
+  
       const productList = products.map((p, idx) =>
         `${idx + 1}. ${p.title}\n${p.price}\n${p.link}\n${p.image}`
       ).join('\n\n');
-
+  
       const botMessages: ChatMessage[] = [
         { sender: 'bot', text: message },
         { sender: 'bot', text: productList }
       ];
-
-      let finalMessages = updatedMessages.slice(0, -1).concat(botMessages);
-
-      if (selectedChatId && selectedChatId !== 'none') {
-        await supabase.from('Chats').update({ messages: finalMessages }).eq('id', selectedChatId);
-      } else {
-        await saveChat(`Search: ${query}`, finalMessages);
+  
+      const finalMessages = updatedMessages.slice(0, -1).concat(botMessages);
+  
+      if (currentId) {
+        await supabase.from('Chats').update({ messages: finalMessages }).eq('id', currentId);
       }
-
+  
       const refreshed = await loadRecentChats();
       setChats(refreshed);
-
-      if (!selectedChatId || selectedChatId === 'none') {
-        const lastChat = refreshed[0];
-        if (lastChat) setSelectedChatId(lastChat.id.toString());
-      }
-
       scrollToEnd();
     } catch (err) {
       console.error("❌ Error during search:", err);
     }
+  
     setLoading(false);
     setQuery('');
   };
@@ -177,7 +189,7 @@ export default function ChatScreen() {
           {showChatMenu && (
             <View style={{ position: 'absolute', top: 80, left: 10, right: 10, backgroundColor: '#fff', borderRadius: 10, padding: 10, elevation: 5, zIndex: 10 }}>
               <ScrollView keyboardShouldPersistTaps="handled">
-                {chats.map(chat => (
+                {chats.filter(chat => chat.name).map(chat => (
                   <View key={chat.id} style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 6 }}>
                     <TouchableOpacity style={{ flex: 1 }} onPress={() => {
                       setSelectedChatId(chat.id.toString());
