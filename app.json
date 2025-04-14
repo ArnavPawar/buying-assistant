@@ -1,13 +1,16 @@
 {
   "expo": {
+    "scheme": "amazon-ai-assistant",
     "name": "amazon-ai-assistant",
     "slug": "amazon-ai-assistant",
+    "owner": "arnavpawar",
     "version": "1.0.0",
-    "permissions": ["INTERNET"],  
+    "permissions": ["INTERNET"],
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
+    "platforms": ["ios", "android", "web"],
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
