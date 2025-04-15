@@ -227,6 +227,7 @@ export default function ChatScreen() {
           {/* Chat content scrollable */}
           <View style={{ flex: 1 }}>
             <FlatList
+              scrollEnabled={true}
               ref={flatListRef}
               data={messages}
               keyExtractor={(_, index) => index.toString()}
