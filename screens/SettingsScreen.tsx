@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Text, Button, Switch, Divider } from 'react-native-paper';
+import { Text, Button, Switch, Divider, IconButton } from 'react-native-paper'; // <-- added IconButton
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../App';
 import { supabase } from '../lib/supabase';
@@ -24,7 +24,6 @@ export default function SettingsScreen({ navigation }: Props) {
           name: `${user_metadata?.first_name ?? ''} ${user_metadata?.last_name ?? ''}`.trim(),
         });
 
-        // Load dark mode from Profiles table
         const { data: profileData } = await supabase
           .from('Profiles')
           .select('dark_mode')
@@ -59,6 +58,14 @@ export default function SettingsScreen({ navigation }: Props) {
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
+        {/* 🔙 Back Button */}
+        <IconButton
+          icon="arrow-left"
+          size={24}
+          onPress={() => navigation.goBack()}
+          style={styles.backButton}
+        />
+
         <Text style={styles.header}>⚙️ Settings</Text>
 
         {profile && (
@@ -99,6 +106,12 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#fff',
   },
+  backButton: {
+    position: 'absolute',
+    top: 8,
+    left: 0,
+    zIndex: 1,
+  },
   header: {
     fontSize: 22,
     fontWeight: 'bold',
@@ -107,6 +120,7 @@ const styles = StyleSheet.create({
   },
   profileBox: {
     marginBottom: 16,
+    marginTop: 24, // to offset space taken by back button
   },
   label: {
     fontWeight: '600',
