@@ -1,30 +1,60 @@
-import React, { useState } from 'react';
-import { View, StyleSheet, Dimensions, ScrollView, Share } from 'react-native';
-import { Text, Button, Card, useTheme, Modal, Portal } from 'react-native-paper';
+import React, { useEffect, useState } from 'react';
+import {
+  View,
+  StyleSheet,
+  Dimensions,
+  ScrollView,
+  Share,
+  TouchableOpacity,
+  Text as RNText
+} from 'react-native';
+import {
+  Text,
+  Button,
+  Card,
+  useTheme,
+  Modal,
+  Portal,
+  IconButton,
+  TextInput as PaperInput
+} from 'react-native-paper';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { saveChat } from '../utils/supabaseChats';
-import type { RootStackParamList } from '../App'; // ✅ make sure you only import it once
-
-type Props = NativeStackScreenProps<RootStackParamList, 'Home'>;
+import { loadRecentChats } from '../utils/supabaseChats';
+import type { RootStackParamList } from '../App';
+import { useFocusEffect } from '@react-navigation/native';
 
 const screenWidth = Dimensions.get('window').width;
 
-export default function HomeScreen({ navigation }: Props) {
+type Chat = {
+  id: string;
+  name: string;
+  messages: any[]; // or `ChatMessage[]` if defined
+};
+
+export default function HomeScreen({ navigation }: NativeStackScreenProps<RootStackParamList, 'Home'>) {
   const theme = useTheme();
   const [visible, setVisible] = useState(false);
+  const [chatDropdownVisible, setChatDropdownVisible] = useState(false);
+  const [chats, setChats] = useState<Chat[]>([]);
+
+  useFocusEffect(
+    React.useCallback(() => {
+      const fetchChats = async () => {
+        const loaded = await loadRecentChats();
+        setChats(loaded);
+      };
+  
+      fetchChats();
+    }, [])
+  );
 
   const handleShare = async () => {
     try {
       const result = await Share.share({
         message: '🛍️ Check out ShopGPT – your AI shopping assistant! https://yourapp.com',
       });
-  
-      if (result.action === Share.sharedAction) {
-        if (result.activityType) {
-          console.log('Shared with activity type:', result.activityType);
-        } else {
-          console.log('Shared successfully');
-        }
+      if (result.action === Share.sharedAction && result.activityType) {
+        console.log('Shared with activity type:', result.activityType);
       } else if (result.action === Share.dismissedAction) {
         console.log('Share dismissed');
       }
@@ -46,9 +76,7 @@ export default function HomeScreen({ navigation }: Props) {
               mode="contained"
               icon="magnify"
               style={styles.button}
-              onPress={async () => {
-                navigation.navigate('Chat', { chatId: null }); // or undefined, depending on your `RootStackParamList` typing
-              }}
+              onPress={() => navigation.navigate('Chat', { chatId: null })}
             >
               Start a New Search
             </Button>
@@ -57,10 +85,28 @@ export default function HomeScreen({ navigation }: Props) {
               mode="outlined"
               icon="chat"
               style={styles.button}
-              onPress={() => navigation.navigate('Chat', { chatId: undefined })}
-              >
+              onPress={() => setChatDropdownVisible(prev => !prev)}
+            >
               View My Chats
             </Button>
+
+            {chatDropdownVisible && (
+              <View style={styles.dropdownOverlay}>
+                <ScrollView style={styles.dropdownBox}>
+                  {chats.map(chat => (
+                    <TouchableOpacity
+                      key={chat.id}
+                      onPress={() => {
+                        navigation.navigate('Chat', { chatId: chat.id.toString() });
+                        setChatDropdownVisible(false);
+                      }}
+                    >
+                      <RNText style={styles.dropdownItem}>{chat.name}</RNText>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              </View>
+            )}
 
             <Button
               mode="outlined"
@@ -76,7 +122,7 @@ export default function HomeScreen({ navigation }: Props) {
               icon="share-variant"
               style={[styles.button, { marginTop: 16 }]}
               onPress={handleShare}
-              >
+            >
               Share the App
             </Button>
           </Card.Content>
@@ -164,10 +210,6 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     textAlign: 'center',
   },
-  infoText: {
-    fontSize: 14,
-    color: '#555',
-  },
   modalContainer: {
     backgroundColor: 'white',
     margin: 24,
@@ -182,5 +224,22 @@ const styles = StyleSheet.create({
   modalText: {
     fontSize: 15,
     color: '#333',
+  },
+  dropdownOverlay: {
+    marginTop: 8,
+    marginBottom: 12,
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    borderRadius: 12,
+    padding: 12,
+    elevation: 3,
+  },
+  dropdownBox: {
+    maxHeight: 200,
+  },
+  dropdownItem: {
+    paddingVertical: 10,
+    fontSize: 16,
+    borderBottomColor: '#eee',
+    borderBottomWidth: 1,
   },
 });

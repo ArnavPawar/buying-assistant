@@ -22,6 +22,7 @@ import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../App';
 import { useRoute } from '@react-navigation/native';
+import { TextInput as RNTextInput } from 'react-native';
 
 type ChatScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Chat'>;
 
@@ -51,6 +52,10 @@ export default function ChatScreen() {
   const [showChatMenu, setShowChatMenu] = useState(false);
   const flatListRef = useRef<FlatList>(null);
 
+  const [editingChatId, setEditingChatId] = useState<string | null>(null);
+  const [editingChatName, setEditingChatName] = useState('');
+
+  const inputRef = useRef<RNTextInput>(null);
 
   useEffect(() => {
     (async () => {
@@ -203,20 +208,81 @@ export default function ChatScreen() {
             <IconButton icon="plus" onPress={handleNewChat} />
           </View>
 
-          {/* Chat menu */}
           {showChatMenu && (
-            <View style={{ position: 'absolute', top: 80, left: 10, right: 10, backgroundColor: '#fff', borderRadius: 10, padding: 10, elevation: 5, zIndex: 10 }}>
+            <View style={{
+              position: 'absolute',
+              top: 80,
+              left: 16,
+              right: 16,
+              backgroundColor: '#fefefe',
+              borderRadius: 16,
+              paddingVertical: 8,
+              paddingHorizontal: 10,
+              shadowColor: '#000',
+              shadowOpacity: 0.1,
+              shadowRadius: 10,
+              elevation: 8,
+              zIndex: 10,
+            }}>
               <ScrollView keyboardShouldPersistTaps="handled">
                 {chats.filter(chat => chat.name).map(chat => (
-                  <View key={chat.id} style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 6 }}>
-                    <TouchableOpacity style={{ flex: 1 }} onPress={() => {
-                      setSelectedChatId(chat.id.toString());
-                      setShowChatMenu(false);
-                      setTimeout(scrollToEnd, 200);
-                    }}>
-                      <Text>{chat.name}</Text>
-                    </TouchableOpacity>
-                    <IconButton icon="pencil" onPress={() => handleRenameChat(chat.id.toString())} />
+                  <View
+                    key={chat.id}
+                    style={{
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      paddingVertical: 10,
+                      borderBottomColor: '#eee',
+                      borderBottomWidth: 1,
+                    }}
+                  >
+                    {editingChatId === chat.id.toString() ? (
+                      <PaperInput
+                        ref={inputRef}
+                        value={editingChatName}
+                        onChangeText={setEditingChatName}
+                        style={{ flex: 1, marginRight: 8, backgroundColor: '#fff' }}
+                        dense
+                        returnKeyType="done"
+                      />
+                    ) : (
+                      <TouchableOpacity
+                        style={{ flex: 1 }}
+                        onPress={() => {
+                          setSelectedChatId(chat.id.toString());
+                          setShowChatMenu(false);
+                          setTimeout(scrollToEnd, 200);
+                        }}
+                      >
+                        <Text style={{ fontSize: 16, color: '#333' }}>{chat.name}</Text>
+                      </TouchableOpacity>
+                    )}
+
+                    {editingChatId === chat.id.toString() ? (
+                      <IconButton
+                        icon="check"
+                        onPress={async () => {
+                          const trimmed = editingChatName.trim();
+                          if (trimmed) {
+                            await supabase.from('Chats').update({ name: trimmed }).eq('id', chat.id);
+                            const refreshed = await loadRecentChats();
+                            setChats(refreshed);
+                          }
+                          setEditingChatId(null);
+                          Keyboard.dismiss();
+                        }}
+                      />
+                    ) : (
+                      <IconButton
+                        icon="pencil"
+                        onPress={() => {
+                          setEditingChatId(chat.id.toString());
+                          setEditingChatName(chat.name);
+                          setTimeout(() => inputRef.current?.focus(), 100);
+                        }}
+                      />
+                    )}
+
                     <IconButton icon="delete" iconColor="red" onPress={() => handleDeleteChat(chat.id)} />
                   </View>
                 ))}
