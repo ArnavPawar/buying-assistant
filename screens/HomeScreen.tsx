@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, Dimensions, ScrollView } from 'react-native';
+import { View, StyleSheet, Dimensions, ScrollView, Share } from 'react-native';
 import { Text, Button, Card, useTheme, Modal, Portal } from 'react-native-paper';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { saveChat } from '../utils/supabaseChats';
@@ -12,6 +12,26 @@ const screenWidth = Dimensions.get('window').width;
 export default function HomeScreen({ navigation }: Props) {
   const theme = useTheme();
   const [visible, setVisible] = useState(false);
+
+  const handleShare = async () => {
+    try {
+      const result = await Share.share({
+        message: '🛍️ Check out ShopGPT – your AI shopping assistant! https://yourapp.com',
+      });
+  
+      if (result.action === Share.sharedAction) {
+        if (result.activityType) {
+          console.log('Shared with activity type:', result.activityType);
+        } else {
+          console.log('Shared successfully');
+        }
+      } else if (result.action === Share.dismissedAction) {
+        console.log('Share dismissed');
+      }
+    } catch (error: any) {
+      console.error('Error sharing:', error.message);
+    }
+  };
 
   return (
     <View style={styles.container}>
@@ -55,8 +75,8 @@ export default function HomeScreen({ navigation }: Props) {
               mode="text"
               icon="share-variant"
               style={[styles.button, { marginTop: 16 }]}
-              onPress={() => console.log('Share coming soon')}
-            >
+              onPress={handleShare}
+              >
               Share the App
             </Button>
           </Card.Content>
