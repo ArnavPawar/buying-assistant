@@ -8,7 +8,8 @@ import {
   ScrollView,
   FlatList,
   Text,
-  TouchableOpacity
+  TouchableOpacity,
+  Alert
 } from 'react-native';
 import { fetchAmazonProducts } from '../utils/amazonAPI';
 import { searchEbayProducts } from '../utils/ebayAPI';
@@ -55,8 +56,6 @@ export default function ChatScreen() {
     (async () => {
       const loaded = await loadRecentChats();
       setChats(loaded);
-  
-      // If the Home screen passed in a chatId
       const chatIdFromRoute = (route.params as any)?.chatId;
 
       if (chatIdFromRoute === null) {
@@ -86,18 +85,22 @@ export default function ChatScreen() {
     setSelectedChatId(null);
   };
 
-  const handleDeleteChat = async (chatId: string) => {
-    await deleteChatById(chatId);
+  const handleDeleteChat = async (chatId: string | number) => {
+    await deleteChatById(chatId.toString());
     const updated = await loadRecentChats();
     setChats(updated);
-  
-    if (selectedChatId === chatId) {
-      if (updated.length > 0) {
-        setSelectedChatId(updated[0].id.toString());
-      } else {
-        handleNewChat(); // only if no chats left
-      }
+    if (selectedChatId?.toString() === chatId.toString()) {
+      await handleNewChat(); // now this will run correctly
     }
+  };
+
+  const handleRenameChat = async (chatId: string) => {
+    Alert.prompt('Rename Chat', 'Enter new name for chat:', async (newName) => {
+      if (!newName.trim()) return;
+      await supabase.from('Chats').update({ name: newName.trim() }).eq('id', chatId);
+      const refreshed = await loadRecentChats();
+      setChats(refreshed);
+    });
   };
 
   const handleNewChat = async () => {
@@ -107,6 +110,9 @@ export default function ChatScreen() {
     setChats(refreshed);
     const latest = refreshed[0];
     if (latest) setSelectedChatId(latest.id.toString());
+    // setSelectedChatId(null); // Indicates a blank chat
+    // setQuery('');             // Clear input field
+    // setLoading(false);        // Reset loading state if needed
   };
 
   const handleSearch = async () => {
@@ -211,7 +217,7 @@ export default function ChatScreen() {
                     }}>
                       <Text>{chat.name}</Text>
                     </TouchableOpacity>
-                    <IconButton icon="pencil" onPress={() => {}} />
+                    <IconButton icon="pencil" onPress={() => handleRenameChat(chat.id.toString())} />
                     <IconButton icon="delete" iconColor="red" onPress={() => handleDeleteChat(chat.id)} />
                   </View>
                 ))}
