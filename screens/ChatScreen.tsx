@@ -104,15 +104,9 @@ export default function ChatScreen() {
   };
 
   const handleNewChat = async () => {
-    const newMessages: ChatMessage[] = [];
-    await saveChat('', newMessages); // No name initially
-    const refreshed = await loadRecentChats();
-    setChats(refreshed);
-    const latest = refreshed[0];
-    if (latest) setSelectedChatId(latest.id.toString());
-    // setSelectedChatId(null); // Indicates a blank chat
-    // setQuery('');             // Clear input field
-    // setLoading(false);        // Reset loading state if needed
+    setSelectedChatId(null);  // Indicates a new, unsaved chat
+    setQuery('');             // Clear input field
+    setLoading(false);        // Reset loading spinner
   };
 
   const handleSearch = async () => {
@@ -125,8 +119,9 @@ export default function ChatScreen() {
     let currentMessages: ChatMessage[] = [];
   
     if (!currentId) {
+      // Only create chat when user sends input
       const initialMessages = [userMsg, loadingMsg];
-      const { data, error } = await saveChat('', initialMessages); // no name initially
+      const { data } = await saveChat(query.slice(0, 25), initialMessages); // set name here
       if (data && data.length > 0) {
         currentId = data[0].id.toString();
         setSelectedChatId(currentId);
@@ -135,13 +130,15 @@ export default function ChatScreen() {
     } else {
       const currentChat = chats.find(chat => chat.id.toString() === currentId);
       currentMessages = currentChat?.messages || [];
+  
       const updatedMessages = [...currentMessages, userMsg, loadingMsg];
   
       await supabase.from('Chats').update({
         messages: updatedMessages,
-        name: currentChat?.name || query.slice(0, 25),
+        name: currentChat?.name?.trim() ? currentChat.name : query.slice(0, 25)
       }).eq('id', currentId);
-      currentMessages = updatedMessages; // carry forward for final update
+  
+      currentMessages = updatedMessages;
     }
   
     const refreshedBefore = await loadRecentChats();
@@ -172,7 +169,9 @@ export default function ChatScreen() {
       const finalMessages = currentMessages.slice(0, -1).concat(botMessages); // replace loading with output
   
       if (currentId) {
-        await supabase.from('Chats').update({ messages: finalMessages }).eq('id', currentId);
+        await supabase.from('Chats').update({
+          messages: finalMessages
+        }).eq('id', currentId);
       }
   
       const refreshed = await loadRecentChats();
