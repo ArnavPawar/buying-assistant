@@ -9,7 +9,8 @@ import {
   FlatList,
   Text,
   TouchableOpacity,
-  Alert
+  Alert,
+  StyleSheet
 } from 'react-native';
 import { fetchAmazonProducts } from '../utils/amazonAPI';
 import { searchEbayProducts } from '../utils/ebayAPI';
@@ -25,6 +26,7 @@ import { useRoute } from '@react-navigation/native';
 import { TextInput as RNTextInput } from 'react-native';
 import ProductDetailModal from '../components/ProductDetailModal';
 import CustomizeSearchPanel from '../components/CustomizeSearchPanel';
+import ChatMenuDropdown from '../components/ChatMenuDropdown';
 
 type ChatScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Chat'>;
 
@@ -61,7 +63,7 @@ export default function ChatScreen() {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
 
   const [showCustomizePanel, setShowCustomizePanel] = useState(false);
-  
+
   const inputRef = useRef<RNTextInput>(null);
 
   useEffect(() => {
@@ -216,85 +218,34 @@ export default function ChatScreen() {
           </View>
 
           {showChatMenu && (
-            <View style={{
-              position: 'absolute',
-              top: 80,
-              left: 16,
-              right: 16,
-              backgroundColor: '#fefefe',
-              borderRadius: 16,
-              paddingVertical: 8,
-              paddingHorizontal: 10,
-              shadowColor: '#000',
-              shadowOpacity: 0.1,
-              shadowRadius: 10,
-              elevation: 8,
-              zIndex: 10,
-            }}>
-              <ScrollView keyboardShouldPersistTaps="handled">
-                {chats.filter(chat => chat.name).map(chat => (
-                  <View
-                    key={chat.id}
-                    style={{
-                      flexDirection: 'row',
-                      alignItems: 'center',
-                      paddingVertical: 10,
-                      borderBottomColor: '#eee',
-                      borderBottomWidth: 1,
-                    }}
-                  >
-                    {editingChatId === chat.id.toString() ? (
-                      <PaperInput
-                        ref={inputRef}
-                        value={editingChatName}
-                        onChangeText={setEditingChatName}
-                        style={{ flex: 1, marginRight: 8, backgroundColor: '#fff' }}
-                        dense
-                        returnKeyType="done"
-                      />
-                    ) : (
-                      <TouchableOpacity
-                        style={{ flex: 1 }}
-                        onPress={() => {
-                          setSelectedChatId(chat.id.toString());
-                          setShowChatMenu(false);
-                          setTimeout(scrollToEnd, 200);
-                        }}
-                      >
-                        <Text style={{ fontSize: 16, color: '#333' }}>{chat.name}</Text>
-                      </TouchableOpacity>
-                    )}
-
-                    {editingChatId === chat.id.toString() ? (
-                      <IconButton
-                        icon="check"
-                        onPress={async () => {
-                          const trimmed = editingChatName.trim();
-                          if (trimmed) {
-                            await supabase.from('Chats').update({ name: trimmed }).eq('id', chat.id);
-                            const refreshed = await loadRecentChats();
-                            setChats(refreshed);
-                          }
-                          setEditingChatId(null);
-                          Keyboard.dismiss();
-                        }}
-                      />
-                    ) : (
-                      <IconButton
-                        icon="pencil"
-                        onPress={() => {
-                          setEditingChatId(chat.id.toString());
-                          setEditingChatName(chat.name);
-                          setTimeout(() => inputRef.current?.focus(), 100);
-                        }}
-                      />
-                    )}
-
-                    <IconButton icon="delete" iconColor="red" onPress={() => handleDeleteChat(chat.id)} />
-                  </View>
-                ))}
-              </ScrollView>
-            </View>
+            <ChatMenuDropdown
+              chats={chats}
+              editingChatId={editingChatId}
+              editingChatName={editingChatName}
+              inputRef={inputRef}
+              onEditNameChange={setEditingChatName}
+              onEditNameSave={async (chatId) => {
+                const trimmed = editingChatName.trim();
+                if (trimmed) {
+                  await supabase.from('Chats').update({ name: trimmed }).eq('id', chatId);
+                  const refreshed = await loadRecentChats();
+                  setChats(refreshed);
+                }
+                setEditingChatId(null);
+                Keyboard.dismiss();
+              }}
+              onEditNameStart={(chatId, name) => {
+                setEditingChatId(chatId);
+                setEditingChatName(name);
+                setTimeout(() => inputRef.current?.focus(), 100);
+              }}
+              onDeleteChat={handleDeleteChat}
+              onSelectChat={(chatId) => {
+                setSelectedChatId(chatId);
+                setShowChatMenu(false);
+                setTimeout(scrollToEnd, 200);
+              }}
+            />
           )}
 
           {/* Chat content scrollable */}
@@ -331,19 +282,29 @@ export default function ChatScreen() {
               }} />
             )}
           {/* Input and controls */}
-          <View style={{ backgroundColor: '#fff', padding: 10, borderTopWidth: 1, borderColor: '#ccc' }}>
-            <PaperInput
-              placeholder="Ask for a product..."
-              placeholderTextColor="#888"
-              value={query}
-              onChangeText={setQuery}
-              onSubmitEditing={handleSearch}
-              mode="outlined"
-              style={{ marginBottom: 8 }}
-              right={<PaperInput.Icon icon="send" onPress={handleSearch} />}
-            />
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingBottom: 12 }}>
-              <Button mode={platform === 'amazon' ? 'contained' : 'outlined'} onPress={() => setPlatform('amazon')}>Amazon</Button>
+    <View style={{
+      backgroundColor: '#fff',
+      padding: 10,
+      borderTopLeftRadius: 24,
+      borderTopRightRadius: 24,
+      shadowColor: '#000',
+      shadowOpacity: 0.06,
+      shadowRadius: 12,
+      elevation: 8,
+    }}>
+    <PaperInput
+      placeholder="Ask for a product..."
+      placeholderTextColor="#888"
+      value={query}
+      onChangeText={setQuery}
+      onSubmitEditing={handleSearch}
+      mode="outlined"
+      theme={{ roundness: 12 }}
+      style={{ marginBottom: 8, backgroundColor: '#fff' }}
+      right={<PaperInput.Icon icon="send" onPress={handleSearch} />}
+    />
+    <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingBottom: 12 }}>
+    <Button mode={platform === 'amazon' ? 'contained' : 'outlined'} onPress={() => setPlatform('amazon')}>Amazon</Button>
               <Button
                 mode={showCustomizePanel ? 'contained' : 'outlined'}
                 onPress={() => setShowCustomizePanel(prev => !prev)}
@@ -359,3 +320,12 @@ export default function ChatScreen() {
     </TouchableWithoutFeedback>
   );
 }
+const styles = StyleSheet.create({
+
+  panel: {
+    marginTop: 12,
+    padding: 10,
+    borderBottomLeftRadius: 20, // 👈 for visual flow
+    borderBottomRightRadius: 20,
+  }
+});
