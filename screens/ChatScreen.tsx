@@ -23,6 +23,8 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../App';
 import { useRoute } from '@react-navigation/native';
 import { TextInput as RNTextInput } from 'react-native';
+import ProductDetailModal from '../components/ProductDetailModal';
+import CustomizeSearchPanel from '../components/CustomizeSearchPanel';
 
 type ChatScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Chat'>;
 
@@ -55,6 +57,11 @@ export default function ChatScreen() {
   const [editingChatId, setEditingChatId] = useState<string | null>(null);
   const [editingChatName, setEditingChatName] = useState('');
 
+  const [modalVisible, setModalVisible] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+
+  const [showCustomizePanel, setShowCustomizePanel] = useState(false);
+  
   const inputRef = useRef<RNTextInput>(null);
 
   useEffect(() => {
@@ -164,7 +171,7 @@ export default function ChatScreen() {
   
       const productList = products.map((p, idx) =>
         `${idx + 1}. ${p.title}\n${p.price}\n${p.link}\n${p.image}`
-      ).join('\n\n');
+      ).join('\n');
   
       const botMessages: ChatMessage[] = [
         { sender: 'bot', text: message },
@@ -292,17 +299,37 @@ export default function ChatScreen() {
 
           {/* Chat content scrollable */}
           <View style={{ flex: 1 }}>
-            <FlatList
+          <FlatList
               scrollEnabled={true}
               ref={flatListRef}
               data={messages}
               keyExtractor={(_, index) => index.toString()}
-              renderItem={({ item }) => <ChatBubble message={item} />}
+              renderItem={({ item }) => (
+                <ChatBubble
+                  message={item}
+                  onProductPress={(product) => {
+                    setSelectedProduct(product);
+                    setModalVisible(true);
+                  }}
+                />
+              )}
               contentContainerStyle={{ padding: 10, paddingBottom: 110 }}
               keyboardShouldPersistTaps="handled"
             />
           </View>
 
+          <ProductDetailModal
+            visible={modalVisible}
+            onDismiss={() => setModalVisible(false)}
+            product={selectedProduct}
+            platform={platform}
+          />
+          {showCustomizePanel && (
+              <CustomizeSearchPanel onApply={() => {
+                console.log('Apply customization');
+                setShowCustomizePanel(false); // optional: hide after apply
+              }} />
+            )}
           {/* Input and controls */}
           <View style={{ backgroundColor: '#fff', padding: 10, borderTopWidth: 1, borderColor: '#ccc' }}>
             <PaperInput
@@ -317,6 +344,12 @@ export default function ChatScreen() {
             />
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingBottom: 12 }}>
               <Button mode={platform === 'amazon' ? 'contained' : 'outlined'} onPress={() => setPlatform('amazon')}>Amazon</Button>
+              <Button
+                mode={showCustomizePanel ? 'contained' : 'outlined'}
+                onPress={() => setShowCustomizePanel(prev => !prev)}
+              >
+                Customize
+              </Button>
               <Button mode={platform === 'ebay' ? 'contained' : 'outlined'} onPress={() => setPlatform('ebay')}>eBay</Button>
             </View>
           </View>
